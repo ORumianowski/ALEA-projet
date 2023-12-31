@@ -1,6 +1,6 @@
 ---
-title: "Alea projet"
-author: "Odin Rumianowski"
+title: "M2 MODE ALEA projet"
+author: "Odin Rumianowski et Abdourahmane Diallo"
 date: "2023-12-30"
 output:
   html_document:
@@ -17,31 +17,86 @@ La modélisation la plus simple est de considérer que le nombre de captures par
 
 - Le processus est sans mémoire. Cela signifie ici, que la capture d'un jaguar n'est pas conditionné par les passages précédents. Cette hypothèse est très forte car on peut facilement imaginer que si le jaguar vient de passer, c'est que l'individu est dans le secteur et donc plus il va rapidment être revu. Cet aspect n'est pas pris en compte dans ce modèle.
 
-- Le paramaètre mu est constant. Cela signie que l'intensité de capture de dépend d'aucun facteurs comme la période de la journée, de la saison ou de caratéristiques du jaguar. Chez les félins, les mâles ont des territoires plus étendus que les femelles. Cet aspect n'est pas pris en compte dans ce modèle.
+- Le paramaètre $µ$ est constant. Cela signie que l'intensité de capture ne dépend d'aucun facteurs comme la période de la journée, de la saison ou de caratéristiques du jaguar. Chez les félins, les mâles ont des territoires plus étendus que les femelles. Cet aspect n'est pas pris en compte dans ce modèle.
 
 *2. Combien de photos de jaguars en moyenne observe-t-on si le piège photographique est déployé pendant une journée ? (Donner l’expression en fonction de µ). *
 
-L' intensité $µ$ est exprimée en captures par heure. Une journée étant composée de 24 heures et l'espérance de la somme de variable aléatoire (VA) étant la somme de leur espérance (linérité de l'espérance). Ainsi, on peut espérer $24µ$ captures en moyenne par jour.
+L' intensité $µ$ est exprimée en captures par heure. Une journée étant composée de 24 heures et l'espérance de la somme de variable aléatoire (VA) étant la somme de leur espérance (linérité de l'espérance). Ainsi, le nombre moyen de photos observées par jour ($E[N]$) peut être exprimé en fonction de l'intensité $\mu$ comme :
+
+$$
+E[N] = \mu \times \text{24}
+$$
+```{r}
+mu <- 0.5  
+duree <- 24  
+nombre_moyen_photos <- mu * duree
+nombre_moyen_photos
+```
 
 *3. D’un jour à l’autre, le nombre de captures est variable. Quelle est la loi du nombre de captures journalières ?*
 
-La somme de VA suivant une loi de Poisson est une loi de Poisson suivant la somme de leur espérance. Ainsi, le nombre de captures journalières suit une loi de Poisson de paramètre $24µ$.
+La somme de VA suivant une loi de Poisson est une loi de Poisson suivant la somme de leur espérance. Ainsi, le nombre de captures journalières $(N)$ suit une loi de Poisson de paramètre $\lambda$.
+
+$$N∼Poisson(λ)$$
+où $λ = \mu * duree$
+
+```{r}
+lambda <- mu * duree
+
+captures_j <- rpois(100, lambda)
+hist(captures_j, main="Distribution de captures journalières", xlab="Nombre de captures", col="lightblue", border="black")
+
+```
+
 
 *4. Proposer une modification du modèle permettant de prendre en compte le fait que l’activité diurne et l’activité nocture du jaguar soient différentes.*
 
-L'intensité $µ$ peut différer selon la période la jour avec une intensité spécifique au jour $µ_{jour}$ et une autre à la nuit $µ_{nuit}$.
+On peut introduire deux intensités différentes ($\mu_{\text{diurne}}$ et $\mu_{\text{nocturne}}$) pour modéliser l'activité diurne et nocturne du jaguar. Ainsi, l'intensité totale ($\mu$) devient une combinaison pondérée de ces deux intensités en fonction des proportions de temps diurne ($p_{\text{diurne}}$) et nocturne ($p_{\text{nocturne}}$) :
+
+$$
+\mu = p_{\text{diurne}} \times \mu_{\text{diurne}} + p_{\text{nocturne}} \times \mu_{\text{nocturne}}
+$$
 
 *5. Le jaguar est un animal territorial qui quitte rarement son territoire. L’intensité µ de captures définie précédemment correspond à un piège posé au centre du territoire du jaguar. On imagine que le taux capture s’atténue avec la distance d entre le piège et le centre d’activité du jaguar selon un coefficient d’atténuation* $e^{−d^2/2}$*. Donner l’intensité du processus ponctuel qui décrit les captures en prenant en compte l’atténuation *
 
-L'intensité atténuée $µ'$ s'écrit simplement : $µ' = e^{−d^2/2}.µ$
+L'intensité atténuée $µ'$ s'écrit simplement : 
+$$µ' = e^{−d^2/2}.µ$$
+
+```{r}
+# définisson la fonction de calcule de l'intensité avec atténuation
+attenuation <- function(d) {
+  mu * exp(-d^2/2)
+}
+
+# Testons avec quelques distances
+distances <- seq(0, 10, by=0.1)
+intensites <- attenuation(distances)
+# exploration graphique
+plot(distances, intensites, type="l", col="blue", lwd=2, xlab="Distance", ylab="Intensité", main="Intensité du processus ponctuel avec atténuation avec µ = 0.5")
+
+```
+
 
 
 *6. Dessiner une réalisation possible du processus ponctuel correspondant aux captures sur une zone contenant deux jaguars (en faisant dans un premier temps abstraction de la notion de territoire et d’un changement de rythme dans la journée). Vous pourrez utiliser deux couleurs pour représenter les captures correspondants à chaque jaguar.*
+```{r}
+# Génération d'une réalisation de captures pour les deux jaguars
+set.seed(1862)
+n <- 100
+c_jaguar1 <- rpois(n, lambda = 0.5)
+c_jaguar2 <- rpois(n, lambda = 0.5)
+
+# Exploration graphique
+plot(c_jaguar1, type = "b", col = "blue", ylim = c(0, max(c_jaguar1, c_jaguar2)), xlab = "Instants de captures", ylab = "Nombre de captures", main = "Réalisation du processus ponctuel pour les deux jaguars")
+lines(c_jaguar2, type = "b", col = "red")
+legend("topleft", legend = c("Jaguar 1", "Jaguar 2"), col = c("blue", "red"), pch = 1)
+
+```
 
 
 *7. Si les jaguars ne sont pas identifiés individuellement (on ne distingue pas les couleurs du schéma précédent), combien en moyenne de photos sont prises en une journée.*
 
-Si les deux jaguars ont un comportement identique et qu'il ne sont pas distinguable alors, l'espérance de la somme de variable aléatoire (VA) étant la somme de leur espérance (linérité de l'espérance), le nombre moyen de photos sera de $48µ$ par jour.
+Si les deux jaguars ont un comportement identique et qu'il ne sont pas distinguable alors, l'espérance de la somme de variable aléatoire (VA) étant la somme de leur espérance (linérité de l'espérance), le nombre moyen de photos sera de $48*µ$ par jour.
 
 *8. Quelle est l’intensité du processus ponctuel qui donne les instants de détection ?*
 
@@ -57,36 +112,42 @@ NB : On considère que l'on se trouve à l'équinoxe.
 *10. Ecrire un code R qui simule des instants de capture photos de deux jaguars sur la zone et qui fait intervenir les différents éléments de modélisation que vous avez définis ci-dessus.*
 
 ```{r}
+# définission de la fonction simul
 simul = function(d1=0.5, d2=1, mu_jour=1, mu_nuit=3){
   
-  mu1 = (exp(-d1**2/2) * (12*mu_jour + 12*mu_nuit))
-  mu2 = (exp(-d2**2/2) * (12*mu_jour + 12*mu_nuit))
-  mu = mu1 + mu2
+  mu1 = (exp(-d1^2/2) * (12*mu_jour + 12*mu_nuit)) # Calcul de l'intensité de µ1
+  mu2 = (exp(-d2^2/2) * (12*mu_jour + 12*mu_nuit)) # Calcul de l'intensité de µ2
+  mu = mu1 + mu2 # intensité globale
   
-  rpois(1, lambda = mu)
-  
+  rpois(1, lambda = mu) # géneralisation d'une réalisation avec une distribution de Poisson
+
 }
 ```
 
 ```{r}
+# Appel de la fonction simul avec les valeur par defaut
 simul()
 ```
 
 
-*11. Calculez numériquement, par une approche de type Monte Carlo, le nombre moyen de captures attendu par jour pour deux jaguars à une distance d1 = 0.5 et d2 = 1, en tenant compte de la variation d’activité entre jour et nuit (intensité de capture photos en journée de 1, et de 3 durant la nuit). Expliquer la démarche pour mettre en oeuvre ce calcul et commenter le code que vous joindrez au rendu.*
+*11. Calculez numériquement, par une approche de type Monte Carlo, le nombre moyen de captures attendu par jour pour deux jaguars à une distance d1 = 0.5 et d2 = 1, en tenant compte de la variation d’activité entre jour et nuit (intensité de capture photos en journée de 1, et de 3 durant la nuit). Expliquer la démarche pour mettre en oeuvre ce calcul et commenter le code que vous joindrez au rendu.*
 
 
 ```{r}
+# Fonction estim_MC : Estimation Monte Carlo du nombre moyen de captures par jour
 estim_MC = function(rep=100000){
   
-  C = 0
-  for(i in 1:rep){
-    C = C + simul()
+  C = 0 # Initialisation de la somme des captures
+  # Boucle MC pour simuler plusieurs réalisations
+  for(i in 1:rep){ 
+    C = C + simul() # Appel de la fonction simul()
   }
-  return(C/rep)
+  return(C/rep)  # retourne la moyenne des captures sur toutes les simulations
 }
-
+# Appel de la fonction estim_MC() pour obtenir une estimation numérique du nombre moyen de captures par jour 
 estim_MC()
+
+
 ```
 
 
@@ -94,11 +155,17 @@ estim_MC()
 *12. Comment retrouver ce résultat par le calcul ?*
 
 ```{r}
-d1=0.5; d2=1; mu_jour=1; mu_nuit=3
+# Définition des paramètres
+d1 = 0.5        # distance pour le jaguar 1
+d2 = 1          # distance pour le jaguar 2
+mu_jour = 1     # intensité de capture photos en journée
+mu_nuit = 3     # intensité de capture photos pendant la nuit
 
-mu1 = (exp(-d1**2/2) * (12*mu_jour + 12*mu_nuit))
-mu2 = (exp(-d2**2/2) * (12*mu_jour + 12*mu_nuit))
-mu = mu1 + mu2
+# Calcul des intensités pour chaque jaguar et l'intensité totale
+mu1 = (exp(-d1^2/2) * (12*mu_jour + 12 * mu_nuit))  # intensité pour le jaguar 1
+mu2 = (exp(-d2^2/2) * (12*mu_jour + 12 * mu_nuit))  # intensité pour le jaguar 2
+mu = mu1 + mu2  # Intensité totale
 mu
+
 ```
 
